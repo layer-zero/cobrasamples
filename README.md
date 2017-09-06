@@ -1,2 +1,2 @@
 # cobrasamples
-Sample cobra scripts
+Sample scripts using the Cisco ACI Cobra SDK
