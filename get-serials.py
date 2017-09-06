@@ -27,3 +27,5 @@ print '\nNode name : Serial number\n'
 
 for node in nodes:
 	print '{0:9} : {1} '.format(node.name,node.serial)
+
+md.logout()
