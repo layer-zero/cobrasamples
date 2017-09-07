@@ -24,9 +24,11 @@ md.login()
 cq = ClassQuery('fabricNode')
 nodes = md.query(cq)
 
+sorted_nodes = sorted(nodes, key = lambda node: node.name)
+
 print '\nNode name : Serial number\n'
 
-for node in nodes:
+for node in sorted_nodes:
     print '{0:9} : {1} '.format(node.name, node.serial)
 
 md.logout()
