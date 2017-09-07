@@ -8,9 +8,6 @@ from cobra.mit.session import LoginSession
 
 from requests.packages.urllib3 import disable_warnings
 
-__author__ = 'Tom Lijnse'
-__version__ = '0.1'
-
 disable_warnings()
 
 apic_url = 'https://192.168.221.2'
