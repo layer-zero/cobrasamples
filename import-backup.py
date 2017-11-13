@@ -3,9 +3,11 @@
 """Import a backup file through SCP"""
 
 from getpass import getpass
+from time import sleep
+from cobra.mit.session import LoginSession
 from cobra.mit.access import MoDirectory
 from cobra.mit.request import ConfigRequest
-from cobra.mit.session import LoginSession
+from cobra.mit.request import DnQuery
 from cobra.model.file import RemotePath
 from cobra.model.config import ImportP, RsImportSource
 
@@ -50,34 +52,56 @@ def create_remote_scp_location(md, target_ip, backup_user, backup_password, back
     cr = ConfigRequest()
     cr.addMo(fabricInst)
     md.commit(cr)
+    print 'Created temporary backup location.'
 
 def import_backup(md, backup_filename):
     fabricInst = md.lookupByDn('uni/fabric')
     importpolicy = ImportP(fabricInst, 'tmp_import_policy')
     importpolicy.fileName = backup_filename
     importpolicy.importMode = 'atomic'
-    importpolicy.importType = 'replace'
+    importpolicy.importType = 'merge'
     importpolicy.adminSt = 'triggered'
     importsource = RsImportSource(importpolicy, tnFileRemotePathName = 'tmp_location')
     cr = ConfigRequest()
     cr.addMo(fabricInst)
     md.commit(cr)
+    print 'Created and triggered import job'
 
 def delete_backup_location(md, name):
-    fabricInst = md.lookupByDn('uni/fabric')
-    remotepath = RemotePath(fabricInst, name)
-    remotepath.delete()
-    cr = ConfigRequest()
-    cr.addMo(remotepath)
-    md.commit(cr)
+    answer = ''
+    while not answer in ['y', 'n']:
+        answer = raw_input('Delete temporary backup location y/n [n]: ') or 'n'
+    if answer == 'y':
+        fabricInst = md.lookupByDn('uni/fabric')
+        remotepath = RemotePath(fabricInst, name)
+        remotepath.delete()
+        cr = ConfigRequest()
+        cr.addMo(remotepath)
+        md.commit(cr)
+        print 'Deleted temporary backup location'
 
 def delete_import_policy(md, name):
-    fabricInst = md.lookupByDn('uni/fabric')
-    importpolicy = ImportP(fabricInst, name)
-    importpolicy.delete()
-    cr = ConfigRequest()
-    cr.addMo(importpolicy)
-    md.commit(cr)
+    answer = ''
+    while not answer in ['y', 'n']:
+        answer = raw_input('Delete temporary import policy y/n [n]: ') or 'n'
+    if answer == 'y':
+        fabricInst = md.lookupByDn('uni/fabric')
+        importpolicy = ImportP(fabricInst, name)
+        importpolicy.delete()
+        cr = ConfigRequest()
+        cr.addMo(importpolicy)
+        md.commit(cr)
+        print 'Deleted import policy'
+
+def check_backup_status(md, name):
+    sleep(1)
+    dq = DnQuery('uni/backupst/jobs-[uni/fabric/configimp-{}]'.format(name))
+    backup_job = md.query(dq)
+    last_runtime = backup_job[0].lastJobName
+    run_dn = 'uni/backupst/jobs-[uni/fabric/configimp-{}]/run-{}'.format(name,last_runtime)
+    dq = DnQuery(run_dn)
+    last_run = md.query(dq)
+    print 'Backup status: {}'.format(last_run[0].details)
 
 def main():
     params = get_parameters()
@@ -85,13 +109,10 @@ def main():
     md = MoDirectory(loginSession)
     md.login()
     create_remote_scp_location(md, params['backup-host'], params['backup-user'], params['backup-password'], params['backup-path'])
-    print 'Created temporary backup location.'
     import_backup(md, params['backup-filename'])
-    print 'Created and triggered import job'
-#    delete_import_policy(md, 'tmp_import_policy')
-    print 'Deleted import job'
-#    delete_backup_location(md, 'tmp_location')
-    print 'Deleted temporary backup location'
+    check_backup_status(md, 'tmp_import_policy')
+    delete_import_policy(md, 'tmp_import_policy')
+    delete_backup_location(md, 'tmp_location')
     md.logout()
 
 if __name__ == '__main__':
