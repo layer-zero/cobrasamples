@@ -12,9 +12,9 @@ from requests.packages.urllib3 import disable_warnings
 disable_warnings()
 
 # Define the URL and credentials for the APIC
-apic_url = 'https://192.168.221.2'
+apic_url = 'https://apic1.dcloud.cisco.com'
 apic_user = 'admin'
-apic_password = '1234QWer'
+apic_password = 'C1sco12345'
 
 # Login to the APIC
 loginSession = LoginSession(apic_url, apic_user, apic_password)
